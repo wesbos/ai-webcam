@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Describe</title>
+    <script src="./client.ts" type="module"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <video src=""></video>
+      <canvas></canvas>
+
+      <div class="voices">
+        <div class="voice" data-voice="ricky">
+          <img src="./images/ricky.png" alt="" />
+          <h2>Ricky</h2>
+          <img class="shot" />
+          <button>Give it to me Ricky<span class="loader"></span></button>
+          <audio controls src=""></audio>
+        </div>
+        <div class="voice" data-voice="cook">
+          <img src="./images/cook.png" alt="" />
+          <h2>Tim Cook</h2>
+          <img class="shot" />
+          <button>Announce me, Tim<span class="loader"></span></button>
+          <audio controls src=""></audio>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
