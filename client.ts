@@ -46,6 +46,8 @@ async function handleButtonClick(e: MouseEvent) {
     }),
   });
 
+  console.log('Result: ', result);
+
   audioEl.src = URL.createObjectURL(await result.blob());
   audioEl.playbackRate = 1.15;
   audioEl.play();
@@ -55,4 +57,4 @@ async function handleButtonClick(e: MouseEvent) {
 
 buttons.forEach((button) => button.addEventListener('click', handleButtonClick));
 
-populateWebcam();
+populateWebcam().then(result => console.log('Populate webcam: ', result));

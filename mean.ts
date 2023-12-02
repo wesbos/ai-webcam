@@ -1,4 +1,4 @@
-// Inspried by https://twitter.com/charliebholtz/status/1724815159590293764
+// Inspired by https://twitter.com/charliebholtz/status/1724815159590293764
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { Hono } from 'hono';
@@ -6,6 +6,9 @@ import OpenAI from 'openai';
 import { config } from 'dotenv';
 import { writeFile } from 'fs/promises';
 import { VoicePrompt, prompts } from './prompts.js';
+import * as fs from "fs";
+import path, { dirname } from "path";
+import {fileURLToPath} from "url";
 
 config();
 
@@ -33,10 +36,10 @@ async function generateSpeech(text: string, voice: VoicePrompt) {
       model_id: 'eleven_multilingual_v2',
       text,
       voice_settings: {
-        similarity_boost: 0.75,
+        similarity_boost: 1,
         stability: 0.3,
         use_speaker_boost: false,
-        style: 0.65,
+        style: 1,
       },
     }),
   };
@@ -51,13 +54,20 @@ async function generateSpeech(text: string, voice: VoicePrompt) {
       controller.close();
     },
   });
-  console.log('Sending stream to client');
+  console.log('Sending stream to client', stream);
   return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'audio/mpeg',
     },
   });
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const completionsDir = path.resolve(__dirname, './completions');
+if (!fs.existsSync(completionsDir)){
+  fs.mkdirSync(completionsDir);
 }
 
 async function describeImage(image: string, voice: VoicePrompt) {
@@ -77,7 +87,7 @@ async function describeImage(image: string, voice: VoicePrompt) {
           },
           {
             type: 'image_url',
-            image_url: image,
+            image_url: { "url": image },
           },
         ],
       },
@@ -85,7 +95,7 @@ async function describeImage(image: string, voice: VoicePrompt) {
     model: 'gpt-4-vision-preview',
   });
   console.log(chatCompletion.choices);
-  await writeFile(`./completions/${Date.now()}.json`, JSON.stringify(chatCompletion, null, 2));
+  await writeFile(path.resolve(completionsDir, `${Date.now()}.json`), JSON.stringify(chatCompletion, null, 2));
   return chatCompletion.choices[0].message.content;
   // const speech = await generateSpeech(`Oh, check out this frickin' goofball with his fancy headgear`, prompt);
 }
