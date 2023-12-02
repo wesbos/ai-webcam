@@ -28,8 +28,8 @@ function drawWebcam() {
 
 async function handleButtonClick(e: MouseEvent) {
   const voiceEl = (e.target as HTMLButtonElement).closest<HTMLDivElement>('.voice');
-  const audioEl = voiceEl.querySelector<HTMLAudioElement>('audio');
-  const img = voiceEl.querySelector<HTMLImageElement>('img.shot');
+  const audioEl = voiceEl!.querySelector<HTMLAudioElement>('audio');
+  const img = voiceEl!.querySelector<HTMLImageElement>('img.shot');
   if (!voiceEl || !img || !audioEl) return;
   voiceEl.classList.add('loading');
   const imageData = drawWebcam();

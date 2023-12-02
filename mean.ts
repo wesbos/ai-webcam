@@ -1,19 +1,14 @@
 // Inspired by https://twitter.com/charliebholtz/status/1724815159590293764
-import { serve } from '@hono/node-server';
-import { cors } from 'hono/cors';
-import { Hono } from 'hono';
-import OpenAI from 'openai';
-import { config } from 'dotenv';
-import { writeFile } from 'fs/promises';
-import { VoicePrompt, prompts } from './prompts.js';
-import * as fs from "fs";
-import path, { dirname } from "path";
-import {fileURLToPath} from "url";
+import { VoicePrompt, prompts } from './prompts.ts';
+import { load } from "https://deno.land/std@0.208.0/dotenv/mod.ts";
+import OpenAI from "https://deno.land/x/openai@v4.20.1/mod.ts";
+import { Application, Router } from "https://deno.land/x/oak/mod.ts";
+import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
-config();
+const env = await load();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY,
+  apiKey: env['OPEN_AI_KEY'],
 });
 
 function massageText(text: string) {
@@ -30,7 +25,7 @@ async function generateSpeech(text: string, voice: VoicePrompt) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'xi-api-key': process.env.ELEVEN_LABS_KEY,
+      'xi-api-key': env['ELEVEN_LABS_KEY'],
     },
     body: JSON.stringify({
       model_id: 'eleven_multilingual_v2',
@@ -63,12 +58,7 @@ async function generateSpeech(text: string, voice: VoicePrompt) {
   });
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const completionsDir = path.resolve(__dirname, './completions');
-if (!fs.existsSync(completionsDir)){
-  fs.mkdirSync(completionsDir);
-}
+const nameFolder = './completions';
 
 async function describeImage(image: string, voice: VoicePrompt) {
   const chatCompletion = await openai.chat.completions.create({
@@ -95,19 +85,22 @@ async function describeImage(image: string, voice: VoicePrompt) {
     model: 'gpt-4-vision-preview',
   });
   console.log(chatCompletion.choices);
-  await writeFile(path.resolve(completionsDir, `${Date.now()}.json`), JSON.stringify(chatCompletion, null, 2));
+  await Deno.writeTextFile(`${nameFolder}/${Date.now()}.json`, JSON.stringify(chatCompletion, null, 2));
   return chatCompletion.choices[0].message.content;
   // const speech = await generateSpeech(`Oh, check out this frickin' goofball with his fancy headgear`, prompt);
 }
 
-const app = new Hono();
+const router = new Router();
 
-app.get('/', (c) => c.text('Hono!'));
-app.use('/audio', cors());
-app.post('/audio', async (c) => {
+router.get('/', (context: any) => {
+  context.response.body = 'Deno!';
+});
+
+router.post('/audio', async (context) => {
   console.log('From Client!!!');
-  const { image, voice } = await c.req.json<{ image: string; voice: string }>();
+  const { image, voice } = await context.request.body().value;
   const voicePrompt = prompts[voice];
+  console.log('Voice Prompt', voicePrompt);
   const description = await describeImage(image, voicePrompt);
   console.log('Description', description);
   if (!description) {
@@ -117,6 +110,10 @@ app.post('/audio', async (c) => {
   return generateSpeech(massagedText, voicePrompt);
 });
 
-serve(app, (info) => {
-  console.log(`Listening on http://localhost:${info.port}`);
-});
+const app = new Application();
+app.use(oakCors());
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+console.log(`Listening on http://localhost:8000`);
+await app.listen({ port: 8000 });
